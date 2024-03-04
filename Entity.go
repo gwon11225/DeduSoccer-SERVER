@@ -1,77 +1,81 @@
 package main
 
-import "github.com/gorilla/websocket"
-
-var (
-	rm = make(RoomMap)
+import (
+	"github.com/gorilla/websocket"
+	"reflect"
 )
-
-const (
-	BALL EntityType = iota
-	USER
-)
-
-const (
-	RED Team = iota
-	BLUE
-)
-
-type EntityType int
-type Team int
-type RoomMap map[string]Room
-
-type Entity struct {
-	eType EntityType
-	posX  string
-	posY  string
-}
 
 type Room struct {
-	roomId string
-	user   *[]User
-	ball   *Entity
-	rScore *int
-	bScore *int
+	rUser  User
+	bUser  User
+	ball   Ball
+	bScore int
+	rScore int
 }
 
 type User struct {
-	Entity
-	conn     *websocket.Conn
-	username string
-	team     Team
+	conn *websocket.Conn
+	name string
+	posX int
+	posY int
 }
 
-func (e *Entity) move(posX string, posY string) {
-	e.posX = posX
-	e.posY = posY
+type Ball struct {
+	posX int
+	posY int
 }
 
-func (r Room) AddUser(user User) {
-	*r.user = append(*r.user, user)
-}
-
-func (r Room) GetUser(username string) *User {
-	for _, user := range *r.user {
-		if user.username == username {
-			return &user
-		}
-	}
-	return &User{}
-}
-
-func (r Room) DeleteUser(username string) {
-	for index, user := range *r.user {
-		if user.username == username {
-			*r.user = append((*r.user)[:index], (*r.user)[index+1:]...)
-			return
-		}
+func (r *Room) SetUser(user User, team string) {
+	if team == "RED" {
+		r.rUser = user
+	} else {
+		r.bUser = user
 	}
 }
 
-func (r Room) RedGoal() {
-	*r.rScore += 1
+func (r *Room) DelUser(team string) {
+	if team == "RED" {
+		r.rUser = User{}
+	} else {
+		r.bUser = User{}
+	}
 }
 
-func (r Room) BlueGoal() {
-	*r.bScore += 1
+func (r *Room) SetBall(ball Ball) {
+	r.ball = ball
+}
+
+func (r *Room) Goal(team string) {
+	if team == "RED" {
+		r.rScore++
+	} else {
+		r.bScore++
+	}
+}
+
+func (r *Room) MoveUser(username string, posX int, posY int) {
+	team := UserCheck(*r, username)
+	if team == "RED" {
+		r.rUser.posX = posX
+		r.rUser.posY = posY
+	} else {
+		r.bUser.posX = posX
+		r.bUser.posY = posY
+	}
+}
+
+func (r *Room) MoveBall(posX int, posY int) {
+	r.ball.posX = posX
+	r.ball.posY = posY
+}
+
+func UserCheck(r Room, username string) string {
+	if !reflect.DeepEqual(r.rUser, User{}) && r.rUser.name == username {
+		return "RED"
+	}
+	if !reflect.DeepEqual(r.bUser, User{}) && r.bUser.name == username {
+		return "BLUE"
+	}
+
+	return "NONE"
 }

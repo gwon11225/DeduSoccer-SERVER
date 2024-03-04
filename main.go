@@ -8,7 +8,7 @@ import (
 
 func main() {
 	router := mux.NewRouter()
-	go router.HandleFunc("/ws", SocketHandler)
+	go router.HandleFunc("/ws", WebSocketHandler)
 
 	log.Println("Starting server")
 	http.ListenAndServe(":8080", router)
