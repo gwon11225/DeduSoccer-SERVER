@@ -55,24 +55,24 @@ func (rc RoomClient) Quit(roomId string, username string) {
 	}
 }
 
-func (rc RoomClient) Goal(roomId string, username string) {
+func (rc RoomClient) Goal(roomId string, team string) {
 	room := rc.roomMap[roomId]
 
-	if UserCheck(*room, username) == "RED" {
+	if team == "RED" {
 		rc.roomMap[roomId].Goal("RED")
-		rc.sendMessage(room.bUser.conn, fmt.Sprintf("GOAL/%s/RED/%d", username, rc.roomMap[roomId].rScore))
+		rc.sendMessage(room.bUser.conn, fmt.Sprintf("GOAL/RED/%d", rc.roomMap[roomId].rScore))
 	} else {
 		rc.roomMap[roomId].Goal("BLUE")
-		rc.sendMessage(room.rUser.conn, fmt.Sprintf("GOAL/%s/BLUE/%d", username, rc.roomMap[roomId].bScore))
+		rc.sendMessage(room.rUser.conn, fmt.Sprintf("GOAL/BLUE/%d", rc.roomMap[roomId].bScore))
 	}
 }
 
-func (rc RoomClient) Out(roomId string, username string) {
+func (rc RoomClient) Out(roomId string, team string) {
 	room := rc.roomMap[roomId]
-	if UserCheck(*room, username) == "RED" {
-		rc.sendMessage(room.bUser.conn, fmt.Sprintf("OUT/%s", username))
+	if team == "RED" {
+		rc.sendMessage(room.bUser.conn, fmt.Sprintf("OUT/%s", team))
 	} else {
-		rc.sendMessage(room.rUser.conn, fmt.Sprintf("OUT/%s", username))
+		rc.sendMessage(room.rUser.conn, fmt.Sprintf("OUT/%s", team))
 	}
 }
 
