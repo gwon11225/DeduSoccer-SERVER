@@ -30,6 +30,7 @@ func (rc RoomClient) Enter(roomId string, username string, conn *websocket.Conn)
 		rc.roomMap[roomId] = &Room{bScore: 0, rScore: 0}
 		rc.roomMap[roomId].SetUser(User{conn, username, -460, -224}, "RED")
 		rc.roomMap[roomId].SetBall(Ball{0, 80})
+		rc.sendMessage(rc.roomMap[roomId].rUser.conn, "RED")
 	}
 }
 
