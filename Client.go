@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
+	"log"
 	"reflect"
 )
 
@@ -19,16 +20,19 @@ func (rc RoomClient) Enter(roomId string, username string, conn *websocket.Conn)
 	if exist {
 		if reflect.DeepEqual(room.rUser, User{}) {
 			rc.roomMap[roomId].SetUser(User{conn, username, -460, -224}, "RED")
+			log.Println("ENTER RED USER")
 			rc.sendMessage(room.rUser.conn, "RED")
 			rc.sendMessage(room.bUser.conn, fmt.Sprintf("ENTER/%s/%s", username, "RED"))
 			rc.sendMessage(room.rUser.conn, fmt.Sprintf("ENTER/%s/%s", room.bUser.name, "BLUE"))
 		} else {
+			log.Println("ENTER BLUE USER")
 			rc.roomMap[roomId].SetUser(User{conn, username, 460, -224}, "BLUE")
 			rc.sendMessage(room.bUser.conn, "BLUE")
 			rc.sendMessage(room.rUser.conn, fmt.Sprintf("ENTER/%s/%s", username, "BLUE"))
 			rc.sendMessage(room.bUser.conn, fmt.Sprintf("ENTER/%s/%s", room.rUser.name, "RED"))
 		}
 	} else {
+		log.Println("ENTER RED USER")
 		rc.roomMap[roomId] = &Room{bScore: 0, rScore: 0}
 		rc.roomMap[roomId].SetUser(User{conn, username, -460, -224}, "RED")
 		rc.roomMap[roomId].SetBall(Ball{0, 80})
