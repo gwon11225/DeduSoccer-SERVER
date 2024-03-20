@@ -19,10 +19,12 @@ func (rc RoomClient) Enter(roomId string, username string, conn *websocket.Conn)
 	if exist {
 		if reflect.DeepEqual(room.rUser, User{}) {
 			rc.roomMap[roomId].SetUser(User{conn, username, -460, -224}, "RED")
+			rc.sendMessage(room.rUser.conn, "RED")
 			rc.sendMessage(room.bUser.conn, fmt.Sprintf("ENTER/%s/%s", username, "RED"))
-			rc.sendMessage(room.bUser.conn, fmt.Sprintf("ENTER/%s/%s", room.bUser.name, "BLUE"))
+			rc.sendMessage(room.rUser.conn, fmt.Sprintf("ENTER/%s/%s", room.bUser.name, "BLUE"))
 		} else {
 			rc.roomMap[roomId].SetUser(User{conn, username, 460, -224}, "BLUE")
+			rc.sendMessage(room.rUser.conn, "BLUE")
 			rc.sendMessage(room.rUser.conn, fmt.Sprintf("ENTER/%s/%s", username, "BLUE"))
 			rc.sendMessage(room.bUser.conn, fmt.Sprintf("ENTER/%s/%s", room.rUser.name, "RED"))
 		}
