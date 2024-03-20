@@ -55,11 +55,15 @@ func (rc RoomClient) Quit(roomId string, username string) {
 		}
 	}
 
+	log.Println("USER QUIT username : " + username)
+
 	room = rc.roomMap[roomId]
 
 	if reflect.DeepEqual(room.rUser, User{}) && reflect.DeepEqual(room.bUser, User{}) {
 		delete(rc.roomMap, roomId)
 	}
+
+	log.Println("ROOM DELETE roomId : " + roomId)
 }
 
 func (rc RoomClient) Goal(roomId string, team string) {
