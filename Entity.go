@@ -3,26 +3,34 @@ package main
 import (
 	"github.com/gorilla/websocket"
 	"reflect"
+	"time"
 )
 
+const gravity float64 = 1.2
+const restitutionY float64 = 0.95
+const restitutionX float64 = 0.995
+
 type Room struct {
-	rUser  User
-	bUser  User
-	ball   Ball
-	bScore int
-	rScore int
+	rUser          User
+	bUser          User
+	ball           Ball
+	bScore         int
+	rScore         int
+	lastUpdateTime time.Time
 }
 
 type User struct {
 	conn *websocket.Conn
 	name string
-	posX int
-	posY int
+	posX float64
+	posY float64
 }
 
 type Ball struct {
-	posX int
-	posY int
+	posX      float64
+	posY      float64
+	velocityY float64
+	velocityX float64
 }
 
 func (r *Room) SetUser(user User, team string) {
@@ -53,7 +61,7 @@ func (r *Room) Goal(team string) {
 	}
 }
 
-func (r *Room) MoveUser(username string, posX int, posY int) {
+func (r *Room) MoveUser(username string, posX float64, posY float64) {
 	team := UserCheck(*r, username)
 	if team == "RED" {
 		r.rUser.posX = posX
@@ -64,9 +72,45 @@ func (r *Room) MoveUser(username string, posX int, posY int) {
 	}
 }
 
-func (r *Room) MoveBall(posX int, posY int) {
+func (r *Room) MoveBall(posX float64, posY float64) {
 	r.ball.posX = posX
 	r.ball.posY = posY
+}
+
+func (r *Room) BallUpdate(deltaTime time.Duration) {
+	r.ball.velocityY += gravity * deltaTime.Seconds()
+	r.ball.posX += r.ball.velocityX * deltaTime.Seconds()
+
+	if r.ball.velocityY >= r.ball.posY {
+		r.ball.posY = 0
+	} else {
+		r.ball.posY -= r.ball.velocityY
+	}
+
+	r.ball.velocityX *= restitutionX
+	if r.ball.velocityX < 1.0 {
+		r.ball.velocityX = 0
+	}
+}
+
+func (r *Room) CollisionUser(posX float64, posY float64) {
+	if posX <= -0.3 {
+		r.ball.velocityX = -14.0
+	} else if posX >= 0.3 {
+		r.ball.velocityX = 14.0
+	}
+
+	if posY <= -0.3 {
+		r.ball.velocityY = 0.5
+	} else if posY >= 0.3 {
+		r.ball.velocityY = -0.5
+	}
+}
+
+func (r *Room) CollisionFloor() {
+	if r.ball.posY <= 0 {
+		r.ball.velocityY = -r.ball.velocityY * restitutionY
+	}
 }
 
 func UserCheck(r Room, username string) string {

@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"reflect"
+	"time"
 )
 
 var (
@@ -19,14 +20,14 @@ func (rc RoomClient) Enter(roomId string, username string, conn *websocket.Conn)
 	room, exist := rc.roomMap[roomId]
 	if exist {
 		if reflect.DeepEqual(room.rUser, User{}) {
-			rc.roomMap[roomId].SetUser(User{conn, username, -460, -224}, "RED")
+			rc.roomMap[roomId].SetUser(User{conn, username, -4.6, -2.24}, "RED")
 			log.Println("ENTER RED USER")
 			rc.sendMessage(room.rUser.conn, "RED")
 			rc.sendMessage(room.bUser.conn, fmt.Sprintf("ENTER/%s/%s", username, "RED"))
 			rc.sendMessage(room.rUser.conn, fmt.Sprintf("ENTER/%s/%s", room.bUser.name, "BLUE"))
 		} else {
 			log.Println("ENTER BLUE USER")
-			rc.roomMap[roomId].SetUser(User{conn, username, 460, -224}, "BLUE")
+			rc.roomMap[roomId].SetUser(User{conn, username, 4.6, -2.24}, "BLUE")
 			rc.sendMessage(room.bUser.conn, "BLUE")
 			rc.sendMessage(room.rUser.conn, fmt.Sprintf("ENTER/%s/%s", username, "BLUE"))
 			rc.sendMessage(room.bUser.conn, fmt.Sprintf("ENTER/%s/%s", room.rUser.name, "RED"))
@@ -34,8 +35,8 @@ func (rc RoomClient) Enter(roomId string, username string, conn *websocket.Conn)
 	} else {
 		log.Println("ENTER RED USER")
 		rc.roomMap[roomId] = &Room{bScore: 0, rScore: 0}
-		rc.roomMap[roomId].SetUser(User{conn, username, -460, -224}, "RED")
-		rc.roomMap[roomId].SetBall(Ball{0, 80})
+		rc.roomMap[roomId].SetUser(User{conn, username, -4.6, -2.24}, "RED")
+		rc.roomMap[roomId].SetBall(Ball{0.0, 8.0, 0.0, 0.0})
 		rc.sendMessage(rc.roomMap[roomId].rUser.conn, "RED")
 	}
 }
@@ -87,18 +88,54 @@ func (rc RoomClient) Out(roomId string, team string) {
 	}
 }
 
-func (rc RoomClient) Move(roomId string, username string, posX int, posY int) {
-	if username == "BALL" {
-		rc.roomMap[roomId].MoveBall(posX, posY)
-	} else {
-		rc.roomMap[roomId].MoveUser(username, posX, posY)
-	}
+func (rc RoomClient) Move(roomId string, username string, posX float64, posY float64) {
+	rc.roomMap[roomId].MoveUser(username, posX, posY)
+
 	room := rc.roomMap[roomId]
 	if UserCheck(*rc.roomMap[roomId], username) == "RED" {
-		rc.sendMessage(room.bUser.conn, fmt.Sprintf("MOVE/%s/%d/%d", room.rUser.name, room.rUser.posX, room.rUser.posY))
+		rc.sendMessage(room.bUser.conn, fmt.Sprintf("MOVE/%s/%f/%f", room.rUser.name, room.rUser.posX, room.rUser.posY))
 	} else {
-		rc.sendMessage(room.rUser.conn, fmt.Sprintf("MOVE/%s/%d/%d", room.bUser.name, room.bUser.posX, room.bUser.posY))
+		rc.sendMessage(room.rUser.conn, fmt.Sprintf("MOVE/%s/%f/%f", room.bUser.name, room.bUser.posX, room.bUser.posY))
 	}
+}
+
+func (rc RoomClient) Ball(roomId string) {
+	rc.roomMap[roomId].lastUpdateTime = time.Now()
+	for {
+		ticker := time.NewTicker(16 * time.Millisecond)
+
+		defer ticker.Stop()
+
+		room, exist := rc.roomMap[roomId]
+
+		if !exist {
+			return
+		}
+
+		select {
+		case <-ticker.C:
+			now := time.Now()
+
+			deltaTime := now.Sub(room.lastUpdateTime)
+
+			room.BallUpdate(deltaTime)
+			room.CollisionFloor()
+
+			if !reflect.DeepEqual(room.rUser, User{}) {
+				rc.sendMessage(room.rUser.conn, fmt.Sprintf("MOVE/BALL/%f/%f", room.ball.posX, room.ball.posY))
+			}
+
+			if !reflect.DeepEqual(room.bUser, User{}) {
+				rc.sendMessage(room.bUser.conn, fmt.Sprintf("MOVE/BALL/%f/%f", room.ball.posX, room.ball.posY))
+			}
+
+			room.lastUpdateTime = now
+		}
+	}
+}
+
+func (rc RoomClient) Coll(roomId string, posX float64, posY float64) {
+	rc.roomMap[roomId].CollisionUser(posX, posY)
 }
 
 func (rc RoomClient) sendMessage(conn *websocket.Conn, message string) {

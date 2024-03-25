@@ -33,6 +33,8 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	rc.Enter(roomId, username, conn)
 
+	go rc.Ball(roomId)
+
 	for {
 		_, message, err := conn.ReadMessage()
 
@@ -49,9 +51,13 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 		case "OUT":
 			rc.Out(roomId, sMessage[1])
 		case "MOVE":
-			posX, _ := strconv.Atoi(sMessage[2])
-			posY, _ := strconv.Atoi(sMessage[3])
+			posX, _ := strconv.ParseFloat(sMessage[2], 64)
+			posY, _ := strconv.ParseFloat(sMessage[3], 64)
 			rc.Move(roomId, sMessage[1], posX, posY)
+		case "COLL":
+			posX, _ := strconv.ParseFloat(sMessage[1], 64)
+			posY, _ := strconv.ParseFloat(sMessage[2], 64)
+			rc.Coll(roomId, posX, posY)
 		case "QUIT":
 			conn.Close()
 			return
