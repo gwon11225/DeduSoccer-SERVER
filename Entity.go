@@ -2,12 +2,13 @@ package main
 
 import (
 	"github.com/gorilla/websocket"
+	"log"
 	"reflect"
 	"time"
 )
 
-const gravity float64 = 1.2
-const restitutionY float64 = 0.95
+const gravity float64 = 0.5
+const restitutionY float64 = 0.99
 const restitutionX float64 = 0.995
 
 type Room struct {
@@ -66,7 +67,7 @@ func (r *Room) MoveUser(username string, posX float64, posY float64) {
 	if team == "RED" {
 		r.rUser.posX = posX
 		r.rUser.posY = posY
-	} else {
+	} else if team == "BLUE" {
 		r.bUser.posX = posX
 		r.bUser.posY = posY
 	}
@@ -77,9 +78,10 @@ func (r *Room) MoveBall(posX float64, posY float64) {
 	r.ball.posY = posY
 }
 
-func (r *Room) BallUpdate(deltaTime time.Duration) {
-	r.ball.velocityY += gravity * deltaTime.Seconds()
-	r.ball.posX += r.ball.velocityX * deltaTime.Seconds()
+func (r *Room) BallUpdate() {
+	deltaTime := (time.Second / 60).Seconds()
+	r.ball.velocityY += gravity * deltaTime
+	r.ball.posX += r.ball.velocityX * deltaTime
 
 	if r.ball.velocityY >= r.ball.posY {
 		r.ball.posY = 0
@@ -88,22 +90,23 @@ func (r *Room) BallUpdate(deltaTime time.Duration) {
 	}
 
 	r.ball.velocityX *= restitutionX
-	if r.ball.velocityX < 1.0 {
+	if r.ball.velocityX < 0.1 {
 		r.ball.velocityX = 0
 	}
 }
 
 func (r *Room) CollisionUser(posX float64, posY float64) {
+	log.Println(posX, posY)
 	if posX <= -0.3 {
-		r.ball.velocityX = -14.0
+		r.ball.velocityX = -10.0
 	} else if posX >= 0.3 {
-		r.ball.velocityX = 14.0
+		r.ball.velocityX = 10.0
 	}
 
 	if posY <= -0.3 {
-		r.ball.velocityY = 0.5
+		r.ball.velocityY = 0.1
 	} else if posY >= 0.3 {
-		r.ball.velocityY = -0.5
+		r.ball.velocityY = -0.1
 	}
 }
 
